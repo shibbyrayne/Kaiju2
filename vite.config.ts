@@ -4,6 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/kaiju2/',
+  base: '/Kaiju2/',
   plugins: [react(), tailwindcss()],
 })
