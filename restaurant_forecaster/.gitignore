@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated data artifacts (SQLite DBs, trained model binaries)
+data/processed/forecaster.db
+data/processed/models/*.joblib
+data/processed/models/*.meta.json
+data/external/weather_cache.db
+
+!data/raw/.gitkeep
+!data/external/.gitkeep
+!data/processed/.gitkeep
+!data/processed/models/.gitkeep
+
+.DS_Store

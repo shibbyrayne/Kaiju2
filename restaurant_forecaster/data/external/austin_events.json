@@ -1,0 +1,71 @@
+{
+  "_comment": "Deterministic calendar of major Austin, TX events used for feature engineering. Dates for SXSW, ACL, F1 COTA, the Austin Marathon, Pecan Street Festival, and Trail of Lights are sourced from each event's published historical/announced schedule. UT Austin football home-game and graduation-weekend dates are best-effort estimates (Saturdays in-season / mid-May & mid-December) and should be replaced with a live UT Athletics feed in production.",
+  "events": [
+    {"name": "SXSW", "category": "sxsw", "start": "2023-03-10", "end": "2023-03-19", "lift_pct": 0.35},
+    {"name": "SXSW", "category": "sxsw", "start": "2024-03-08", "end": "2024-03-17", "lift_pct": 0.35},
+    {"name": "SXSW", "category": "sxsw", "start": "2025-03-07", "end": "2025-03-16", "lift_pct": 0.35},
+    {"name": "SXSW", "category": "sxsw", "start": "2026-03-13", "end": "2026-03-22", "lift_pct": 0.35},
+    {"name": "SXSW", "category": "sxsw", "start": "2027-03-12", "end": "2027-03-21", "lift_pct": 0.35},
+
+    {"name": "ACL Weekend 1", "category": "acl", "start": "2023-10-06", "end": "2023-10-08", "lift_pct": 0.30},
+    {"name": "ACL Weekend 2", "category": "acl", "start": "2023-10-13", "end": "2023-10-15", "lift_pct": 0.30},
+    {"name": "ACL Weekend 1", "category": "acl", "start": "2024-10-04", "end": "2024-10-06", "lift_pct": 0.30},
+    {"name": "ACL Weekend 2", "category": "acl", "start": "2024-10-11", "end": "2024-10-13", "lift_pct": 0.30},
+    {"name": "ACL Weekend 1", "category": "acl", "start": "2025-10-03", "end": "2025-10-05", "lift_pct": 0.30},
+    {"name": "ACL Weekend 2", "category": "acl", "start": "2025-10-10", "end": "2025-10-12", "lift_pct": 0.30},
+    {"name": "ACL Weekend 1", "category": "acl", "start": "2026-10-02", "end": "2026-10-04", "lift_pct": 0.30},
+    {"name": "ACL Weekend 2", "category": "acl", "start": "2026-10-09", "end": "2026-10-11", "lift_pct": 0.30},
+
+    {"name": "F1 US Grand Prix", "category": "f1", "start": "2023-10-20", "end": "2023-10-22", "lift_pct": 0.40},
+    {"name": "F1 US Grand Prix", "category": "f1", "start": "2024-10-18", "end": "2024-10-20", "lift_pct": 0.40},
+    {"name": "F1 US Grand Prix", "category": "f1", "start": "2025-10-17", "end": "2025-10-19", "lift_pct": 0.40},
+    {"name": "F1 US Grand Prix", "category": "f1", "start": "2026-10-23", "end": "2026-10-25", "lift_pct": 0.40},
+
+    {"name": "Austin Marathon", "category": "marathon", "start": "2023-02-19", "end": "2023-02-19", "lift_pct": 0.15},
+    {"name": "Austin Marathon", "category": "marathon", "start": "2024-02-18", "end": "2024-02-18", "lift_pct": 0.15},
+    {"name": "Austin Marathon", "category": "marathon", "start": "2025-02-16", "end": "2025-02-16", "lift_pct": 0.15},
+    {"name": "Austin Marathon", "category": "marathon", "start": "2026-02-15", "end": "2026-02-15", "lift_pct": 0.15},
+
+    {"name": "Pecan Street Festival Spring", "category": "pecan_street", "start": "2023-05-06", "end": "2023-05-07", "lift_pct": 0.12},
+    {"name": "Pecan Street Festival Fall", "category": "pecan_street", "start": "2023-09-23", "end": "2023-09-24", "lift_pct": 0.12},
+    {"name": "Pecan Street Festival Spring", "category": "pecan_street", "start": "2024-05-04", "end": "2024-05-05", "lift_pct": 0.12},
+    {"name": "Pecan Street Festival Fall", "category": "pecan_street", "start": "2024-09-21", "end": "2024-09-22", "lift_pct": 0.12},
+    {"name": "Pecan Street Festival Spring", "category": "pecan_street", "start": "2025-05-03", "end": "2025-05-04", "lift_pct": 0.12},
+    {"name": "Pecan Street Festival Fall", "category": "pecan_street", "start": "2025-09-20", "end": "2025-09-21", "lift_pct": 0.12},
+
+    {"name": "Trail of Lights", "category": "trail_of_lights", "start": "2023-12-10", "end": "2023-12-23", "lift_pct": 0.10},
+    {"name": "Trail of Lights", "category": "trail_of_lights", "start": "2024-12-08", "end": "2024-12-21", "lift_pct": 0.10},
+    {"name": "Trail of Lights", "category": "trail_of_lights", "start": "2025-12-07", "end": "2025-12-20", "lift_pct": 0.10},
+
+    {"name": "UT Graduation Weekend Spring", "category": "graduation", "start": "2023-05-19", "end": "2023-05-21", "lift_pct": 0.18},
+    {"name": "UT Graduation Weekend Fall", "category": "graduation", "start": "2023-12-15", "end": "2023-12-16", "lift_pct": 0.12},
+    {"name": "UT Graduation Weekend Spring", "category": "graduation", "start": "2024-05-17", "end": "2024-05-19", "lift_pct": 0.18},
+    {"name": "UT Graduation Weekend Fall", "category": "graduation", "start": "2024-12-13", "end": "2024-12-14", "lift_pct": 0.12},
+    {"name": "UT Graduation Weekend Spring", "category": "graduation", "start": "2025-05-16", "end": "2025-05-18", "lift_pct": 0.18},
+    {"name": "UT Graduation Weekend Fall", "category": "graduation", "start": "2025-12-19", "end": "2025-12-20", "lift_pct": 0.12},
+    {"name": "UT Graduation Weekend Spring", "category": "graduation", "start": "2026-05-15", "end": "2026-05-17", "lift_pct": 0.18},
+
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-09-09", "end": "2023-09-09", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-09-30", "end": "2023-09-30", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-10-21", "end": "2023-10-21", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-11-04", "end": "2023-11-04", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-11-18", "end": "2023-11-18", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2023-11-24", "end": "2023-11-24", "lift_pct": 0.20},
+
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-08-31", "end": "2024-08-31", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-09-14", "end": "2024-09-14", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-09-21", "end": "2024-09-21", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-10-19", "end": "2024-10-19", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-11-16", "end": "2024-11-16", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-11-23", "end": "2024-11-23", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2024-11-30", "end": "2024-11-30", "lift_pct": 0.20},
+
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-08-30", "end": "2025-08-30", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-09-13", "end": "2025-09-13", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-09-20", "end": "2025-09-20", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-10-18", "end": "2025-10-18", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-11-15", "end": "2025-11-15", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-11-22", "end": "2025-11-22", "lift_pct": 0.20},
+    {"name": "UT Football Home Game", "category": "ut_football", "start": "2025-11-28", "end": "2025-11-28", "lift_pct": 0.20}
+  ]
+}
