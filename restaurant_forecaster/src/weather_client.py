@@ -26,6 +26,26 @@ DAILY_VARIABLES = [
     "precipitation_sum",
 ]
 
+NUMERIC_WEATHER_COLUMNS = ["temp_max", "temp_min", "precipitation_mm"]
+
+
+def _coerce_numeric_weather_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Force temp_max/temp_min/precipitation_mm to float64, coercing junk to NaN.
+
+    A Python list that is entirely ``None`` (which Open-Meteo returns for a
+    field near the edges of its forecast window) infers as ``object`` dtype
+    when handed to pandas, not ``float64`` -- same failure mode as the
+    'date' dtype bug, but on the numeric columns, and it trips LightGBM
+    with "pandas dtypes must be int, float or bool" instead of a merge
+    error. Called at every point these columns are built or read back from
+    the cache so no path can leak an object-dtype column downstream.
+    """
+    df = df.copy()
+    for col in NUMERIC_WEATHER_COLUMNS:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
 RAIN_THRESHOLD_MM = 2.5
 SEVERE_PRECIP_THRESHOLD_MM = 40.0
 SEVERE_TEMP_HIGH_C = 40.0
@@ -74,7 +94,7 @@ def _read_cached(conn: sqlite3.Connection, start: date, end: date) -> pd.DataFra
     query = "SELECT * FROM weather_daily WHERE date >= ? AND date <= ?"
     df = pd.read_sql_query(query, conn, params=(start.isoformat(), end.isoformat()))
     df["date"] = pd.to_datetime(df["date"])
-    return df
+    return _coerce_numeric_weather_columns(df)
 
 
 def _write_cache(conn: sqlite3.Connection, df: pd.DataFrame) -> None:
@@ -138,6 +158,7 @@ def _fetch_open_meteo(
             "precipitation_mm": daily.get("precipitation_sum", [None] * len(daily["time"])),
         }
     )
+    df = _coerce_numeric_weather_columns(df)
     df["source"] = source_label
     return df
 
@@ -194,10 +215,12 @@ def get_weather(
         combined = pd.concat([cached, fetched], ignore_index=True) if not fetched.empty else cached
         if combined.empty:
             combined = _empty_weather_frame()
-        # Belt-and-suspenders: guarantee datetime64 regardless of how
+        # Belt-and-suspenders: guarantee datetime64/float64 regardless of how
         # `combined` was assembled above (cache hit, fresh fetch, concat of
-        # both, or the empty fallback).
+        # both, or the empty fallback) -- concatenating frames that disagree
+        # on dtype can itself reintroduce `object` on either side.
         combined["date"] = pd.to_datetime(combined["date"])
+        combined = _coerce_numeric_weather_columns(combined)
         combined = combined.drop_duplicates(subset=["date"], keep="last").sort_values("date").reset_index(drop=True)
         return combined
     finally:
@@ -206,7 +229,7 @@ def get_weather(
 
 def add_weather_derived_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add is_rainy_day / severe_weather_alert flags from raw weather columns."""
-    df = df.copy()
+    df = _coerce_numeric_weather_columns(df)
     df["temp_max"] = df["temp_max"].fillna(df["temp_max"].mean())
     df["temp_min"] = df["temp_min"].fillna(df["temp_min"].mean())
     df["precipitation_mm"] = df["precipitation_mm"].fillna(0.0)

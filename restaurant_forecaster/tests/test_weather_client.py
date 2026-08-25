@@ -160,6 +160,74 @@ def test_build_training_frame_with_weather_survives_partial_fetch_failure(monkey
             cache_path.unlink()
 
 
+def _fake_payload_with_nulls(start: date, end: date, null_field: str):
+    days = pd.date_range(start, end, freq="D")
+    payload = {
+        "daily": {
+            "time": [d.strftime("%Y-%m-%d") for d in days],
+            "temperature_2m_max": [28.0] * len(days),
+            "temperature_2m_min": [15.0] * len(days),
+            "precipitation_sum": [0.0] * len(days),
+        }
+    }
+    payload["daily"][null_field] = [None] * len(days)
+    return payload
+
+
+def test_get_weather_numeric_columns_are_float_when_api_returns_all_nulls(tmp_path: Path, monkeypatch):
+    """Regression for the exact bug reported from a live deploy:
+
+    'pandas dtypes must be int, float or bool. Fields with bad pandas
+    dtypes: temp_max: object, temp_min: object, precipitation_mm: object'.
+
+    Open-Meteo returns an all-null array for a field near the edges of its
+    forecast window; a Python list of all None infers as `object` dtype in
+    pandas rather than float64, and that dtype survives all the way to
+    LightGBM's .fit() call.
+    """
+    cache_path = tmp_path / "weather_cache.db"
+
+    def fake_get(url, params=None, timeout=None):
+        start = date.fromisoformat(params["start_date"])
+        end = date.fromisoformat(params["end_date"])
+        return _FakeResponse(_fake_payload_with_nulls(start, end, "temperature_2m_max"))
+
+    monkeypatch.setattr(weather_client.requests, "get", fake_get)
+
+    df = weather_client.get_weather(date(2023, 1, 1), date(2023, 1, 5), cache_path=cache_path)
+    for col in weather_client.NUMERIC_WEATHER_COLUMNS:
+        assert pd.api.types.is_numeric_dtype(df[col]), f"{col} is {df[col].dtype}, expected numeric"
+
+    enriched = weather_client.add_weather_derived_features(df)
+    for col in weather_client.NUMERIC_WEATHER_COLUMNS:
+        assert pd.api.types.is_numeric_dtype(enriched[col])
+
+
+def test_build_training_frame_numeric_dtypes_survive_all_null_weather_field(monkeypatch):
+    """End-to-end: object-dtype weather columns must not reach the LightGBM fit."""
+    from src import feature_engineering
+
+    def fake_get(url, params=None, timeout=None):
+        start = date.fromisoformat(params["start_date"])
+        end = date.fromisoformat(params["end_date"])
+        return _FakeResponse(_fake_payload_with_nulls(start, end, "precipitation_sum"))
+
+    monkeypatch.setattr(weather_client.requests, "get", fake_get)
+
+    dates = pd.date_range(date.today() - timedelta(days=20), date.today() - timedelta(days=5), freq="D")
+    df = pd.DataFrame({"date": dates, "sales": 100.0, "guest_count": 10})
+
+    cache_path = weather_client.config.WEATHER_CACHE_PATH
+    existed_before = cache_path.exists()
+    try:
+        result = feature_engineering.build_training_frame(df, fetch_weather=True)
+        for col in feature_engineering.WEATHER_FEATURE_COLUMNS:
+            assert pd.api.types.is_numeric_dtype(result[col]), f"{col} is {result[col].dtype}"
+    finally:
+        if not existed_before and cache_path.exists():
+            cache_path.unlink()
+
+
 def test_add_weather_derived_features_flags_rain_and_severe():
     df = pd.DataFrame(
         {
