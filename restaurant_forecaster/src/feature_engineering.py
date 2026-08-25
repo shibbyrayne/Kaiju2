@@ -65,6 +65,7 @@ def add_calendar_and_weather_features(
         start = df["date"].min().date()
         end = df["date"].max().date()
         weather = weather_client.get_weather_features(start, end, latitude, longitude, timezone)
+        weather["date"] = pd.to_datetime(weather["date"])
         df = df.merge(weather.drop(columns=["source"], errors="ignore"), on="date", how="left")
         df = weather_client.add_weather_derived_features(df)
     else:

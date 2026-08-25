@@ -49,11 +49,31 @@ def _init_cache(db_path: Path = config.WEATHER_CACHE_PATH) -> sqlite3.Connection
     return conn
 
 
+def _empty_weather_frame() -> pd.DataFrame:
+    """An empty weather frame with explicit dtypes.
+
+    Critical for a zero-row ``date`` column specifically: pandas infers
+    ``object`` dtype for columns of an empty DataFrame/query result, and
+    concatenating that against a real ``datetime64`` frame silently
+    upcasts the combined column back to ``object`` -- which then blows up
+    with "You are trying to merge on datetime64[us] and object columns"
+    the moment it's merged against the (correctly-typed) calendar frame.
+    """
+    return pd.DataFrame(
+        {
+            "date": pd.Series(dtype="datetime64[ns]"),
+            "temp_max": pd.Series(dtype="float64"),
+            "temp_min": pd.Series(dtype="float64"),
+            "precipitation_mm": pd.Series(dtype="float64"),
+            "source": pd.Series(dtype="object"),
+        }
+    )
+
+
 def _read_cached(conn: sqlite3.Connection, start: date, end: date) -> pd.DataFrame:
     query = "SELECT * FROM weather_daily WHERE date >= ? AND date <= ?"
     df = pd.read_sql_query(query, conn, params=(start.isoformat(), end.isoformat()))
-    if not df.empty:
-        df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"])
     return df
 
 
@@ -104,11 +124,11 @@ def _fetch_open_meteo(
         payload = resp.json()
     except requests.RequestException as exc:
         logger.warning("Weather API request failed (%s): %s", source_label, exc)
-        return pd.DataFrame(columns=["date", "temp_max", "temp_min", "precipitation_mm", "source"])
+        return _empty_weather_frame()
 
     daily = payload.get("daily", {})
     if not daily or "time" not in daily:
-        return pd.DataFrame(columns=["date", "temp_max", "temp_min", "precipitation_mm", "source"])
+        return _empty_weather_frame()
 
     df = pd.DataFrame(
         {
@@ -173,7 +193,11 @@ def get_weather(
 
         combined = pd.concat([cached, fetched], ignore_index=True) if not fetched.empty else cached
         if combined.empty:
-            combined = pd.DataFrame(columns=["date", "temp_max", "temp_min", "precipitation_mm", "source"])
+            combined = _empty_weather_frame()
+        # Belt-and-suspenders: guarantee datetime64 regardless of how
+        # `combined` was assembled above (cache hit, fresh fetch, concat of
+        # both, or the empty fallback).
+        combined["date"] = pd.to_datetime(combined["date"])
         combined = combined.drop_duplicates(subset=["date"], keep="last").sort_values("date").reset_index(drop=True)
         return combined
     finally:
@@ -205,6 +229,7 @@ def get_weather_features(
 ) -> pd.DataFrame:
     """Fetch weather and attach derived rain/severe-weather flags in one call."""
     weather = get_weather(start, end, latitude, longitude, timezone)
+    weather["date"] = pd.to_datetime(weather["date"])
     if weather.empty:
         full_range = pd.date_range(start, end, freq="D")
         weather = pd.DataFrame(
