@@ -1,0 +1,36 @@
+# Render Blueprint for the Austin Restaurant Forecasting Engine.
+#
+# Deploy: in the Render dashboard, "New +" -> "Blueprint", point it at this
+# repo/branch. Render will read this file and provision the web service
+# below automatically. See restaurant_forecaster/README.md for details,
+# including how to attach a persistent disk so trained models and the
+# accuracy history survive redeploys.
+services:
+  - type: web
+    name: austin-restaurant-forecaster
+    env: python
+    plan: free
+    rootDir: restaurant_forecaster
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+    # The free plan's disk is wiped on every deploy (new build = new
+    # filesystem), so trained models / the accuracy DB won't survive a
+    # redeploy -- just re-click "Train models" in the dashboard afterward.
+    # To persist them across redeploys, upgrade this service to a paid
+    # plan (persistent disks aren't available on Free) and uncomment:
+    #
+    # disk:
+    #   name: forecaster-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    #
+    # ...then uncomment this env var so the app writes there instead of
+    # the ephemeral app directory:
+    #
+    #   - key: FORECASTER_PROCESSED_DIR
+    #     value: /var/data/processed

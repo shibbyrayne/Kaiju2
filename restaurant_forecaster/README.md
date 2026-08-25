@@ -29,38 +29,44 @@ ensemble models, and adapts over time via a closed feedback loop.
   a trailing 7-14 day window.
 - **Webhook / REST export** for pushing projections + trailing accuracy
   metrics into a downstream app.
-- **CLI** (`typer` + `rich`) and an optional local **FastAPI** server
-  exposing the same functionality.
+- **CLI** (`typer` + `rich`), a **FastAPI** JSON API, and a **browser
+  dashboard** (served by the same FastAPI app) all exposing the same
+  functionality — deployable as-is to [Render](https://render.com).
 
 ## Project layout
 
 ```
-restaurant_forecaster/
-├── data/
-│   ├── raw/                  # your historical CSVs go here
-│   ├── external/              # austin_events.json, weather_cache.db
-│   └── processed/             # forecaster.db, trained model artifacts
-├── src/
-│   ├── config.py               # paths, constants, tunables
-│   ├── data_loader.py          # schema validation + cleaning
-│   ├── austin_calendar.py      # events, holidays, seasonality
-│   ├── weather_client.py       # Open-Meteo client + SQLite cache
-│   ├── feature_engineering.py  # combines calendar+weather, recency weights
-│   ├── models/
-│   │   ├── base.py
-│   │   ├── lgbm_model.py       # LightGBM quantile regressor
-│   │   ├── prophet_model.py    # Prophet / statsmodels seasonal baseline
-│   │   └── ensemble.py         # blends the two, save/load
-│   ├── evaluation.py           # WAPE, MAPE, bias, interval coverage
-│   ├── feedback_loop.py        # log actuals, drift detection, retraining
-│   ├── storage.py              # SQLite persistence layer
-│   ├── exporter.py             # webhook/REST push client
-│   ├── forecaster.py           # shared train/forecast orchestration
-│   ├── cli.py                  # typer CLI entrypoint
-│   └── api.py                  # optional FastAPI server
-├── tests/
-├── requirements.txt
-└── README.md
+Kaiju2/
+├── render.yaml                    # Render Blueprint (deploy from repo root)
+└── restaurant_forecaster/
+    ├── data/
+    │   ├── raw/                  # your historical CSVs go here
+    │   ├── external/              # austin_events.json, weather_cache.db
+    │   └── processed/             # forecaster.db, trained model artifacts
+    ├── web/                       # browser dashboard (served by FastAPI)
+    │   ├── index.html
+    │   └── static/ (app.js, style.css)
+    ├── src/
+    │   ├── config.py               # paths, constants, tunables
+    │   ├── data_loader.py          # schema validation + cleaning
+    │   ├── austin_calendar.py      # events, holidays, seasonality
+    │   ├── weather_client.py       # Open-Meteo client + SQLite cache
+    │   ├── feature_engineering.py  # combines calendar+weather, recency weights
+    │   ├── models/
+    │   │   ├── base.py
+    │   │   ├── lgbm_model.py       # LightGBM quantile regressor
+    │   │   ├── prophet_model.py    # Prophet / statsmodels seasonal baseline
+    │   │   └── ensemble.py         # blends the two, save/load
+    │   ├── evaluation.py           # WAPE, MAPE, bias, interval coverage
+    │   ├── feedback_loop.py        # log actuals, drift detection, retraining
+    │   ├── storage.py              # SQLite persistence layer
+    │   ├── exporter.py             # webhook/REST push client
+    │   ├── forecaster.py           # shared train/forecast orchestration
+    │   ├── cli.py                  # typer CLI entrypoint
+    │   └── api.py                  # FastAPI app: dashboard + JSON API
+    ├── tests/
+    ├── requirements.txt
+    └── README.md
 ```
 
 ## Setup
@@ -118,14 +124,51 @@ python -m src.cli push-projections --endpoint https://example.com/webhook \
     --api-key $RESTAURANT_FORECASTER_API_KEY --start 2026-10-01 --end 2026-10-13
 ```
 
-## API server
+## Web app / API server
 
 ```bash
 uvicorn src.api:app --reload
 ```
 
-Exposes `POST /forecast`, `POST /log-actuals`, `GET /accuracy/{target}`, and
-`POST /push-projections`, mirroring the CLI commands.
+Open `http://localhost:8000/` for the dashboard: train models (bundled
+sample data or your own CSV upload), generate a forecast with a chart and
+driver breakdown, log actuals, watch trailing accuracy, and push
+projections to a downstream webhook — all from the browser.
+
+The same functionality is available as JSON under `/api/*`:
+
+| Method | Path                     | Purpose |
+|--------|--------------------------|---------|
+| GET    | `/health`                | Liveness check (used by Render) |
+| GET    | `/api/status`            | Whether models are trained, versions, row counts |
+| POST   | `/api/train`             | Train on the bundled sample data or an uploaded CSV |
+| POST   | `/api/retrain`           | Retrain on the last dataset used (no re-upload) |
+| POST   | `/api/forecast`          | `{start, end, fetch_weather}` → daily P10/P50/P90 forecast |
+| POST   | `/api/log-actuals`       | `{date, sales, guests}` → error + drift report |
+| GET    | `/api/accuracy/{target}` | Trailing 7/30/90-day WAPE/MAPE/bias |
+| POST   | `/api/push-projections`  | Generate + push a forecast to a webhook |
+
+## Deploying to Render
+
+This repo includes a Render [Blueprint](https://render.com/docs/blueprint-spec)
+(`render.yaml` at the repo root, `rootDir: restaurant_forecaster`):
+
+1. Push this repo to GitHub (already done if you're reading this on a branch).
+2. In the Render dashboard: **New +** → **Blueprint**, select the repo/branch.
+3. Render reads `render.yaml` and provisions a free Python web service —
+   build command `pip install -r requirements.txt`, start command
+   `uvicorn src.api:app --host 0.0.0.0 --port $PORT`, health check `/health`.
+4. Once deployed, open the service URL and click **Train models** in the
+   dashboard (uses the bundled sample data by default, or upload your own
+   CSV) before generating a forecast.
+
+**Persistence caveat:** on Render's free plan the filesystem is rebuilt on
+every deploy, so trained models and the accuracy/error-log SQLite DB don't
+survive a redeploy — just retrain again afterward. To persist them, upgrade
+the service to a paid plan and attach a
+[persistent disk](https://render.com/docs/disks) (the commented-out `disk:`
+block in `render.yaml` shows how, paired with the `FORECASTER_PROCESSED_DIR`
+env var so the app writes its DB/models there instead of the app directory).
 
 ## Recency weighting
 

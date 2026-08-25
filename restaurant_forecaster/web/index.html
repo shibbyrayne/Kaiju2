@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Austin Restaurant Forecaster</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127829;</text></svg>" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>🌮 Austin Restaurant Forecaster</h1>
+      <div id="status-badge" class="badge badge-pending">checking status&hellip;</div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Training -->
+    <section class="card" id="card-train">
+      <h2>1. Train models</h2>
+      <p class="muted">Train the sales &amp; guest-count ensemble on historical data. Use the bundled Austin sample
+        dataset to try things out, or upload your own CSV (<code>date, sales, guest_count</code> required).</p>
+
+      <div class="row">
+        <label class="radio">
+          <input type="radio" name="data-source" value="sample" checked />
+          Use bundled sample data
+        </label>
+        <label class="radio">
+          <input type="radio" name="data-source" value="upload" />
+          Upload CSV
+        </label>
+      </div>
+
+      <div class="row" id="upload-row" hidden>
+        <input type="file" id="csv-file" accept=".csv" />
+      </div>
+
+      <div class="row">
+        <label class="checkbox">
+          <input type="checkbox" id="train-fetch-weather" />
+          Fetch live weather during training (slower; needs network)
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="btn-train" class="btn btn-primary">Train models</button>
+        <button id="btn-retrain" class="btn btn-secondary" disabled>Retrain on last dataset</button>
+        <span id="train-status" class="status-text"></span>
+      </div>
+
+      <div id="train-result" class="result-block" hidden></div>
+    </section>
+
+    <!-- Forecast -->
+    <section class="card" id="card-forecast">
+      <h2>2. Generate a forecast</h2>
+      <div class="row">
+        <label>Start<input type="date" id="forecast-start" /></label>
+        <label>End<input type="date" id="forecast-end" /></label>
+        <label class="checkbox">
+          <input type="checkbox" id="forecast-fetch-weather" />
+          Fetch live weather
+        </label>
+        <button id="btn-forecast" class="btn btn-primary">Generate forecast</button>
+        <span id="forecast-status" class="status-text"></span>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="forecast-chart" height="90"></canvas>
+      </div>
+
+      <div class="table-wrap">
+        <table id="forecast-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Sales ($)</th>
+              <th>Sales range</th>
+              <th>Guests</th>
+              <th>Guests range</th>
+              <th>Key drivers</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="two-col">
+      <!-- Log actuals -->
+      <section class="card" id="card-actuals">
+        <h2>3. Log actuals</h2>
+        <div class="row">
+          <label>Date<input type="date" id="actuals-date" /></label>
+        </div>
+        <div class="row">
+          <label>Sales ($)<input type="number" id="actuals-sales" min="0" step="0.01" /></label>
+          <label>Guests<input type="number" id="actuals-guests" min="0" step="1" /></label>
+        </div>
+        <div class="row">
+          <button id="btn-log-actuals" class="btn btn-primary">Log actuals</button>
+          <span id="actuals-status" class="status-text"></span>
+        </div>
+        <div id="actuals-result" class="result-block" hidden></div>
+      </section>
+
+      <!-- Accuracy -->
+      <section class="card" id="card-accuracy">
+        <h2>4. Accuracy</h2>
+        <div class="row">
+          <label>Target
+            <select id="accuracy-target">
+              <option value="sales">Sales</option>
+              <option value="guest_count">Guest count</option>
+            </select>
+          </label>
+          <button id="btn-accuracy" class="btn btn-secondary">Refresh</button>
+        </div>
+        <table id="accuracy-table">
+          <thead>
+            <tr><th>Window</th><th>WAPE</th><th>MAPE</th><th>Bias</th><th>Accuracy</th><th>N</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- Push projections -->
+    <section class="card" id="card-push">
+      <h2>5. Push projections to a downstream app</h2>
+      <div class="row">
+        <label class="grow">Webhook URL<input type="url" id="push-endpoint" placeholder="https://example.com/webhook" /></label>
+        <label class="grow">API key<input type="password" id="push-api-key" /></label>
+      </div>
+      <div class="row">
+        <label>Start<input type="date" id="push-start" /></label>
+        <label>End<input type="date" id="push-end" /></label>
+        <button id="btn-push" class="btn btn-primary">Push</button>
+        <span id="push-status" class="status-text"></span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Austin Restaurant Sales &amp; Guest Count Forecasting Engine</span>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

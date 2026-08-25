@@ -16,7 +16,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 EXTERNAL_DATA_DIR = DATA_DIR / "external"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
+
+# PROCESSED_DATA_DIR holds the SQLite DB and trained model artifacts -- the
+# only state that needs to survive a restart/redeploy. Overridable via
+# FORECASTER_PROCESSED_DIR so a host like Render can point it at a mounted
+# persistent disk instead of the (ephemeral, on most plans) app filesystem.
+PROCESSED_DATA_DIR = Path(os.getenv("FORECASTER_PROCESSED_DIR", str(DATA_DIR / "processed")))
 
 for _dir in (RAW_DATA_DIR, EXTERNAL_DATA_DIR, PROCESSED_DATA_DIR):
     _dir.mkdir(parents=True, exist_ok=True)
